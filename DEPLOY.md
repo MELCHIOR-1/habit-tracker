@@ -17,6 +17,7 @@ GitHub Pages (main 分支 / 根目录)
 | Name | 说明 |
 |---|---|
 | `INTERVALS_KEY` | Intervals.icu 的 API Key（Settings → API 里的 Key，Basic 鉴权用户名固定 `API_KEY`） |
+| `INTERVALS_ATHLETE_ID` | Intervals.icu 的**运动员 ID**（纯数字）。登录 intervals.icu 后，地址栏形如 `https://intervals.icu/athletes/123456/dashboard`，其中的 `123456` 就是 athleteId。**这个之前漏配了，是导致体重/运动一直抓不到的根因** |
 | `DUOLINGO_USER` | 多邻国手柄/用户名（如 `wx.d4f7`），脚本自动解析数字 ID |
 | `WEREAD_API_KEY` | 微信读书网关 Key（格式 `wrk-xxxx`） |
 | `DATA_PASSPHRASE` | **查看口令**：你自己定的任意字符串，用于加密与浏览器解密。**务必牢记** |
@@ -33,8 +34,8 @@ GitHub Pages (main 分支 / 根目录)
 
 ## 本地预览（可选）
 ```bash
-# 本地生成密文（需在本机环境变量设置上面的 4 个值）
-INTERVALS_KEY=xxx DUOLINGO_USER=wx.d4f7 WEREAD_API_KEY=wrk-xxx DATA_PASSPHRASE=你的口令 \
+# 本地生成密文（需在本机环境变量设置上面的 5 个值）
+INTERVALS_KEY=xxx INTERVALS_ATHLETE_ID=123456 DUOLINGO_USER=wx.d4f7 WEREAD_API_KEY=wrk-xxx DATA_PASSPHRASE=你的口令 \
   node action-sync.mjs
 # 起静态预览
 node server.js          # 打开 http://localhost:3000

@@ -11,7 +11,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const dataDir = join(__dirname, 'data');
 
 const config = {
-  intervals: { apiKey: process.env.INTERVALS_KEY || '' },
+  intervals: { apiKey: process.env.INTERVALS_KEY || '', athleteId: process.env.INTERVALS_ATHLETE_ID || '' },
   duolingo: { username: process.env.DUOLINGO_USER || '' },
   weread: { apiKey: process.env.WEREAD_API_KEY || '' }
 };
