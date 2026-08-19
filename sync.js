@@ -57,10 +57,11 @@ function parseCSV(text) {
 }
 
 export async function syncIntervals(year, month, cfg) {
-  const athleteId = cfg?.athleteId;
+  // 参考「导出华为运动健康数据到网页并自动同步」: 个人 Intervals 账户的 athleteId 用 "0" 即可
+  const athleteId = cfg?.athleteId || '0';
   const apiKey = cfg?.apiKey;
-  if (!athleteId || !apiKey) {
-    return { ok: false, reason: '未配置 Intervals.icu 凭证（athleteId / apiKey）' };
+  if (!apiKey) {
+    return { ok: false, reason: '未配置 Intervals.icu 凭证（apiKey）' };
   }
   const mm = String(month).padStart(2, '0');
   const lastDay = new Date(year, month, 0).getDate();
