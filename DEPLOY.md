@@ -34,8 +34,8 @@ GitHub Pages (main 分支 / 根目录)
 
 ## 本地预览（可选）
 ```bash
-# 本地生成密文（需在本机环境变量设置上面的 5 个值）
-INTERVALS_KEY=xxx INTERVALS_ATHLETE_ID=123456 DUOLINGO_USER=wx.d4f7 WEREAD_API_KEY=wrk-xxx DATA_PASSPHRASE=你的口令 \
+# 本地生成密文（需在本机环境变量设置上面的 4 个值；athleteId 已在代码内恒为 "0"，无需传入）
+INTERVALS_KEY=xxx DUOLINGO_USER=wx.d4f7 WEREAD_API_KEY=wrk-xxx DATA_PASSPHRASE=你的口令 \
   node action-sync.mjs
 # 起静态预览
 node server.js          # 打开 http://localhost:3000
@@ -46,3 +46,21 @@ node server.js          # 打开 http://localhost:3000
 - 数据公开在 Pages 上，但仓库里只存**密文**；没有口令他人无法解。口令不要写进任何文件/提交。
 - `data/meta.json`（lastSync、多邻国 XP 累计基准）是明文、必须随仓库提交，否则每日 XP 增量会断。
 - Duolingo 公开接口目前不返回历史按日 XP，英语"已打卡"用连胜窗口标记，真实每日 XP 从每天同步起逐日累积。
+
+## 踩坑记录（排查用）
+
+### 1. Intervals 的 athleteId 必须填 `"0"`，不是地址栏的数字
+- 个人 Intervals 账户的 `athleteId` 默认就是 **`"0"`**，即 `/athlete/0/...` 代表"当前登录用户"。这是参考成功任务「导出华为运动健康数据到网页并自动同步」（`server.py` 里 `DEFAULT_CONFIG["athleteId"] = "0"`、`/athlete/{athlete}/...`）。
+- **千万别从地址栏 `https://intervals.icu/athletes/123456/dashboard` 抄那个 `123456` 当 athleteId**——那不是 API 用的 ID，填了会导致体重/运动请求静默失败、永远为空。
+- 现代码已**恒用 `"0"`**（`sync.js` 内 `cfg?.athleteId || '0'`，`action-sync.mjs` 固定 `athleteId: '0'`），`INTERVALS_ATHLETE_ID` secret 已废弃，留着也会被忽略。
+
+### 2. 体重/运动趋势图空白？多半是 `.enc` 比 `.json` 旧（加密层本身无 bug）
+- 网页**只读 `data/checkins.enc`，绝不读明文 `checkins.json`**。若某次 Action 跑时 Intervals 抓取失败（如旧版缺 athleteId），生成的 `.enc` 里就没有 `weight`/`exercise_min`；而 `checkins.json` 是后来成功同步落地的，二者会**不一致**——于是读书/英语正常、唯独体重/运动空白（且当前月份确实该有数据）。
+- **即时验证法**：用仓库里的 `local-encrypt.mjs` 以真实口令把本地明文重加密成 `.enc`（Node 端 `crypto.mjs` 与浏览器算法逐字节一致），localhost 硬刷新即可看到：
+  ```bash
+  DATA_PASSPHRASE=你的口令 node local-encrypt.mjs
+  ```
+  生成的 `.enc` **仅供本地预览，切勿 commit/push**（线上由 Action 维护）。
+- **成功标志**：正确同步后 `.enc` 体积会明显大于"空数据"时的 **6850 字节**（例如含体重/运动时为 7000+ 字节）。若重跑 Action 后体积仍是 6850，说明 Intervals 那次仍没抓到，看 Action 日志里 `intervals` 字段的 `ok`/`reason` 定位。
+- 加密算法本身验证过无 bug：`crypto.mjs` 是对整个对象 `JSON.stringify` 后整体加密，字段一个不丢，且与前端解密兼容。空白不是加密丢字段，而是源数据当时就没抓到。
+
