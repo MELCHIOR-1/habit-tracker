@@ -1,0 +1,6 @@
+# 含密钥/明文，绝不进仓库
+config.json
+data/checkins.json
+*.tmp
+node_modules/
+.DS_Store

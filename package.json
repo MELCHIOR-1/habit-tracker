@@ -1,0 +1,12 @@
+{
+  "name": "habit-tracker",
+  "version": "1.0.0",
+  "description": "每日习惯自动打卡网站：运动/体重(Intervals.icu) + 读书(微信读书) + 背英语(Duolingo)",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

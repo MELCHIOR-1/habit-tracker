@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>习惯打卡</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="app-header">
+      <h1>习惯打卡</h1>
+      <div class="status" id="status"></div>
+    </header>
+
+    <div class="toolbar">
+      <button class="nav-btn" id="prev" title="上一月">‹</button>
+      <div class="month-label" id="monthLabel"></div>
+      <button class="nav-btn" id="next" title="下一月">›</button>
+      <div class="spacer"></div>
+      <button class="btn" id="lockBtn" title="重新输入口令">🔒 锁定</button>
+    </div>
+
+    <div class="legend" id="legend"></div>
+
+    <div class="calendar" id="calendar"></div>
+
+    <section class="charts">
+      <div class="chart-card">
+        <h3>运动趋势 <span class="unit">分钟</span></h3>
+        <div class="chart" id="chartExercise"></div>
+      </div>
+      <div class="chart-card">
+        <h3>体重趋势 <span class="unit">kg</span></h3>
+        <div class="chart" id="chartWeight"></div>
+      </div>
+      <div class="chart-card">
+        <h3>读书趋势 <span class="unit">分钟</span></h3>
+        <div class="chart" id="chartReading"></div>
+      </div>
+    </section>
+    <section class="charts">
+      <div class="chart-card wide">
+        <h3>背英语趋势 <span class="unit">XP</span></h3>
+        <div class="chart" id="chartEnglish"></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- 口令弹框 -->
+  <div class="modal-mask" id="passMask" hidden></div>
+  <div class="modal-box" id="passModal" hidden>
+    <h3>输入查看口令</h3>
+    <p class="hint">数据已加密，需输入部署时设置的口令才能查看。</p>
+    <div class="field">
+      <input type="password" id="passInput" placeholder="口令" autocomplete="off" />
+    </div>
+    <div class="pass-error" id="passError" hidden></div>
+    <div class="modal-actions">
+      <button class="btn primary" id="passSubmit">查看</button>
+    </div>
+  </div>
+
+  <!-- 日明细弹框（只读） -->
+  <div class="modal-mask" id="dayMask" hidden></div>
+  <div class="modal-box" id="dayModal" hidden>
+    <h3 id="dayTitle"></h3>
+    <div id="dayBody"></div>
+    <div class="modal-actions">
+      <button class="btn primary" id="dayClose">关闭</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
