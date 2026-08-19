@@ -41,6 +41,7 @@ node server.js          # 打开 http://localhost:3000
 ```
 
 ## 注意事项
+- ⚠️ **必须用默认 `https://<用户名>.github.io/<仓库名>/` 地址访问，不要绑定自定义域名。** 口令解密依赖浏览器 Web Crypto（`crypto.subtle`），它只在 **HTTPS 或 localhost** 下存在。GitHub Pages 默认 `*.github.io` 子域自带 HTTPS，可直接用；但若绑定自定义域名（如 `blog.shawpan.cn`），GitHub 往往无法为其签发 HTTPS 证书（Enforce HTTPS 报 "domain is not properly configured to support HTTPS"），导致该域名下是 HTTP，`crypto.subtle` 为 `undefined`，口令解密必然失败（报错 `Cannot read properties of undefined (reading 'importKey')`）。如确需自定义域名，须先让 DNS 的 CNAME 正确指向 `MELCHIOR-1.github.io` 且关闭 CDN/Cloudflare 代理，等 GitHub 成功签发证书后再用。
 - 数据公开在 Pages 上，但仓库里只存**密文**；没有口令他人无法解。口令不要写进任何文件/提交。
 - `data/meta.json`（lastSync、多邻国 XP 累计基准）是明文、必须随仓库提交，否则每日 XP 增量会断。
 - Duolingo 公开接口目前不返回历史按日 XP，英语"已打卡"用连胜窗口标记，真实每日 XP 从每天同步起逐日累积。
