@@ -28,6 +28,15 @@ function b64uToBytes(s) {
   return u;
 }
 async function deriveKey(pass, salt) {
+  if (!globalThis.crypto || !globalThis.crypto.subtle) {
+    throw new Error(
+      '当前打开方式不支持解密：浏览器要求 AES 加密只能在「HTTPS」或「localhost」下运行。\n' +
+      '请用以下任一方式访问：\n' +
+      '· 部署后通过 https 开头的 Pages 地址（如 https://MELCHIOR-1.github.io/habit-tracker/）\n' +
+      '· 本地用 node server.js 启动，再访问 http://localhost:3000\n' +
+      '不要直接双击 file:// 打开，也不要用局域网 IP（如 http://192.168.x.x）访问。'
+    );
+  }
   const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pass), 'PBKDF2', false, ['deriveKey']);
   return crypto.subtle.deriveKey(
     { name: 'PBKDF2', salt, iterations: ITER, hash: 'SHA-256' },
