@@ -17,7 +17,7 @@ GitHub Pages (main 分支 / 根目录)
 | Name | 说明 |
 |---|---|
 | `INTERVALS_KEY` | Intervals.icu 的 API Key（Settings → API 里的 Key，Basic 鉴权用户名固定 `API_KEY`） |
-| `INTERVALS_ATHLETE_ID`（**可选**） | Intervals.icu 的运动员 ID。**个人 Intervals 账户默认用 `0` 即可**（参考成功任务「导出华为运动健康数据到网页并自动同步」，`/athlete/0/...` 即代表当前用户），因此**这个 secret 可以不配**——代码会自动回退到 `0`。若你确实配了它，请填 `0` 或你账户真实的数字 ID；填错（如误填地址栏 `athletes/123456` 那个数）会导致体重/运动抓不到。 |
+| ~~`INTERVALS_ATHLETE_ID`~~（**已废弃，无需配置**） | 早期版本需要从 intervals.icu 地址栏查 athleteId 配成 secret，容易填错导致体重/运动抓不到。现已改为代码恒用 `0`（参考成功任务「导出华为运动健康数据到网页并自动同步」，`/athlete/0/...` 即代表当前用户），**这个 secret 可以删掉**，留着也会被忽略。 |
 | `DUOLINGO_USER` | 多邻国手柄/用户名（如 `wx.d4f7`），脚本自动解析数字 ID |
 | `WEREAD_API_KEY` | 微信读书网关 Key（格式 `wrk-xxxx`） |
 | `DATA_PASSPHRASE` | **查看口令**：你自己定的任意字符串，用于加密与浏览器解密。**务必牢记** |

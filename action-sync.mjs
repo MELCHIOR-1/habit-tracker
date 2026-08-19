@@ -11,7 +11,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const dataDir = join(__dirname, 'data');
 
 const config = {
-  intervals: { apiKey: process.env.INTERVALS_KEY || '', athleteId: process.env.INTERVALS_ATHLETE_ID || '0' },
+  intervals: { apiKey: process.env.INTERVALS_KEY || '', athleteId: '0' }, // 个人 Intervals 账户 athleteId 恒用 "0"（参考成功任务），不再依赖 INTERVALS_ATHLETE_ID secret
   duolingo: { username: process.env.DUOLINGO_USER || '' },
   weread: { apiKey: process.env.WEREAD_API_KEY || '' }
 };
