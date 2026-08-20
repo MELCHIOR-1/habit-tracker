@@ -146,14 +146,13 @@ body {
 
 .day .bars {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 2px;
   width: 100%;
   min-height: 6px;
 }
 .day .bar {
-  flex: 0 0 auto;
-  width: 16px;
+  width: 100%;
   height: 6px;
   border-radius: 2px;
 }
