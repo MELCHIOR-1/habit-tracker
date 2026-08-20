@@ -24,25 +24,25 @@ function lYearDays(y){ let s=348; const info=LUNAR_INFO[y-1900]; s+=(info&0x8000
 function leapMonthOf(y){ return LUNAR_INFO[y-1900]&0xf; }
 function leapDaysOf(y){ const lm = LUNAR_INFO[y-1900]&0xf; return lm?((LUNAR_INFO[y-1900]&0x10000)?30:29):0; }
 function monthDaysOf(y,m){ return (LUNAR_INFO[y-1900]&(0x10000>>m))?30:29; }
-function getLunarDay(y, m, d){
+function getLunar(y, m, d) {
   const obj = new Date(y, m - 1, d);
   y = obj.getFullYear(); m = obj.getMonth() + 1; d = obj.getDate();
   let offset = Math.round((Date.UTC(y, m - 1, d) - Date.UTC(1900, 0, 31)) / 86400000);
   let i, temp = 0;
-  for(i = 1900; i < 2101 && offset > 0; i++){ temp = lYearDays(i); offset -= temp; }
-  if(offset < 0){ offset += temp; i--; }
+  for (i = 1900; i < 2101 && offset > 0; i++) { temp = lYearDays(i); offset -= temp; }
+  if (offset < 0) { offset += temp; i--; }
   const finalYear = i;
   const lm = leapMonthOf(finalYear);
   let isLeap = false;
-  for(i = 1; i < 13 && offset > 0; i++){
-    if(lm > 0 && i === lm + 1 && !isLeap){ --i; isLeap = true; temp = leapDaysOf(finalYear); }
+  for (i = 1; i < 13 && offset > 0; i++) {
+    if (lm > 0 && i === lm + 1 && !isLeap) { --i; isLeap = true; temp = leapDaysOf(finalYear); }
     else { temp = monthDaysOf(finalYear, i); }
-    if(isLeap && i === lm + 1) isLeap = false;
+    if (isLeap && i === lm + 1) isLeap = false;
     offset -= temp;
   }
-  if(offset === 0 && lm > 0 && i === lm + 1){ if(isLeap) isLeap = false; else { isLeap = true; --i; } }
-  if(offset < 0){ offset += temp; --i; }
-  return offset + 1;
+  if (offset === 0 && lm > 0 && i === lm + 1) { if (isLeap) isLeap = false; else { isLeap = true; --i; } }
+  if (offset < 0) { offset += temp; --i; }
+  return { month: i, day: offset + 1, isLeap };
 }
 const LUNAR_DAY_CN1 = ['日','一','二','三','四','五','六','七','八','九','十'];
 const LUNAR_DAY_CN2 = ['初','十','廿','卅'];
@@ -51,6 +51,11 @@ function lunarDayCN(n){
   if(n === 20) return '二十';
   if(n === 30) return '三十';
   return LUNAR_DAY_CN2[Math.floor(n / 10)] + LUNAR_DAY_CN1[n % 10];
+}
+// 农历月份名：正月/二月/…/冬月/腊月，闰月前加“闰”
+const LUNAR_MONTH_CN = ['正','二','三','四','五','六','七','八','九','十','冬','腊'];
+function lunarMonthCN(month, isLeap) {
+  return (isLeap ? '闰' : '') + LUNAR_MONTH_CN[month - 1] + '月';
 }
 
 // ---------- 解密（Web Crypto，算法与 crypto.mjs 严格一致） ----------
@@ -138,12 +143,16 @@ function renderCalendar() {
     }
     const checked = icons.length > 0;
     const isToday = key === todayStr;
-    const lunarText = lunarDayCN(getLunarDay(year, month, d));
+    const lunar = getLunar(year, month, d);
+    const lunarMonth = lunarMonthCN(lunar.month, lunar.isLeap);
+    const lunarDay = lunar.day === 1 ? '初一' : lunarDayCN(lunar.day);
+    // 一般日历：初一替换为对应农历月份（如七月初一 → 显示“七月”）
+    const lunarText = lunar.day === 1 ? lunarMonth : lunarDay;
     html += `
       <div class="day ${checked ? 'checked' : ''} ${isToday ? 'today' : ''}" data-date="${key}">
         <div class="day-head">
           <div class="num">${d}</div>
-          <div class="lunar" title="农历${lunarText}">${lunarText}</div>
+          <div class="lunar" title="农历${lunarMonth}${lunarDay}">${lunarText}</div>
         </div>
         <div class="icons">${icons.join('')}</div>
       </div>`;

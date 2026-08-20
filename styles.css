@@ -137,23 +137,27 @@ body {
 .day.today { box-shadow: inset 0 0 0 2px var(--primary); }
 
 .day .num {
+  text-align: center;
   font-size: 30px;
   font-weight: 700;
   line-height: 1;
   color: var(--text);
 }
 .day-head {
-  display: flex;
-  align-items: flex-start;
-  gap: 4px;
+  position: relative;
+  width: 100%;
   padding-top: 2px;
 }
 .day .lunar {
+  position: absolute;
+  top: 2px;
+  right: 2px;
   writing-mode: vertical-rl;
   text-orientation: upright;
   font-size: 12px;
   line-height: 1.2;
   color: var(--muted);
+  text-align: right;
 }
 
 .day .icons {
