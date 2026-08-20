@@ -1,8 +1,8 @@
 const METRICS = {
-  exercise_min: { label: '运动', unit: '分钟', color: 'var(--exercise)', cls: 'exercise' },
-  weight: { label: '体重', unit: 'kg', color: 'var(--weight)', cls: 'weight' },
-  reading_min: { label: '读书', unit: '分钟', color: 'var(--reading)', cls: 'reading' },
-  english_xp: { label: '英语', unit: 'XP', color: 'var(--english)', cls: 'english' }
+  exercise_min: { label: '运动', unit: '分钟', color: 'var(--exercise)', cls: 'exercise', icon: '🏃' },
+  weight: { label: '体重', unit: 'kg', color: 'var(--weight)', cls: 'weight', icon: '⚖️' },
+  reading_min: { label: '读书', unit: '分钟', color: 'var(--reading)', cls: 'reading', icon: '📚' },
+  english_xp: { label: '英语', unit: 'XP', color: 'var(--english)', cls: 'english', icon: '🔤' }
 };
 
 const WEEKDAYS = ['一', '二', '三', '四', '五', '六', '日'];
@@ -61,7 +61,7 @@ async function loadData(pass) {
 function renderLegend() {
   $('#legend').innerHTML = Object.values(METRICS).map((m) => `
     <span class="item">
-      <span class="swatch" style="background:${m.color}"></span>${m.label}（${m.unit}）
+      <span class="legend-icon">${m.icon}</span>${m.label}（${m.unit}）
     </span>`).join('');
 }
 
@@ -93,20 +93,20 @@ function renderCalendar() {
   for (let d = 1; d <= daysInMonth; d++) {
     const key = ymd(year, month, d);
     const rec = allDays[key] || {};
-    const bars = [];
+    const icons = [];
     for (const [field, meta] of Object.entries(METRICS)) {
       let has = false;
       if (field === 'weight') has = typeof rec[field] === 'number';
       else if (field === 'english_xp') has = (typeof rec.english_xp === 'number' && rec.english_xp > 0) || rec.english_streak === true;
       else has = typeof rec[field] === 'number' && rec[field] > 0;
-      if (has) bars.push(`<span class="bar ${meta.cls}" title="${meta.label}"></span>`);
+      if (has) icons.push(`<span class="emoji ${meta.cls}" title="${meta.label}">${meta.icon}</span>`);
     }
-    const checked = bars.length > 0;
+    const checked = icons.length > 0;
     const isToday = key === todayStr;
     html += `
       <div class="day ${checked ? 'checked' : ''} ${isToday ? 'today' : ''}" data-date="${key}">
         <div class="num">${d}</div>
-        <div class="bars">${bars.join('')}</div>
+        <div class="icons">${icons.join('')}</div>
       </div>`;
   }
   el.innerHTML = html;
@@ -206,7 +206,7 @@ function openDay(date) {
     if (field === 'weight') shown = typeof v === 'number' ? `${v} kg` : '—';
     else if (field === 'english_xp') shown = (typeof v === 'number' && v > 0) ? `${v} ${m.unit}` : (rec.english_streak ? '连胜日 ✓' : '—');
     else shown = (typeof v === 'number' && v > 0) ? `${v} ${m.unit}` : '—';
-    return `<div class="day-row"><span class="dot ${m.cls}"></span><span>${m.label}</span><b>${shown}</b></div>`;
+    return `<div class="day-row"><span class="emoji ${m.cls}">${m.icon}</span><span>${m.label}</span><b>${shown}</b></div>`;
   }).join('');
   $('#dayModal').hidden = false;
   $('#dayMask').hidden = false;
