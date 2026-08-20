@@ -29,8 +29,9 @@ jobs:
         env:
           INTERVALS_KEY: ${{ secrets.INTERVALS_KEY }}
           DUOLINGO_USER: ${{ secrets.DUOLINGO_USER }}
+          DUOLINGO_JWT: ${{ secrets.jwt_token }}
           WEREAD_API_KEY: ${{ secrets.WEREAD_API_KEY }}
-          DATA_PASSPHRASE: ${{ secrets.DATA_PASSPHRASE }}
+          DATA_PASSPHRASE: ${{ secrets.DATA_PASSPHRASE }}}
         run: node action-sync.mjs
 
       - name: Commit encrypted data

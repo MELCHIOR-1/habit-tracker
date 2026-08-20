@@ -1,4 +1,4 @@
-import { putDay, getDay, getMeta, setMeta } from './store.js';
+import { putDay, getMeta, setMeta } from './store.js';
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36';
 
@@ -122,17 +122,24 @@ export async function syncIntervals(year, month, cfg) {
 }
 
 // ---------- Duolingo (背英语) ----------
-// 参考「在网页显示多邻国学习进度数据」成功实现:
-//   - /2017-06-30/users?username={username}  -> users[0].id (数字 ID)
-//   - 取 streak / totalXp / streakData 推算连续学习日 (连胜窗口)
-//   - 用 totalXp 每日增量计算每日 XP (需服务端按日累积快照, 历史连胜日仅标记、无 XP 数值)
+// 用 JWT 调多邻国官方接口取「逐日练习 XP」，作为背英语趋势表的数据输入:
+//   - /2017-06-30/users?username={username}            -> users[0].id (数字 userId)
+//   - /2017-06-30/users/{userId}/xp_summaries          -> summaries:[{gainedXp, date}]，date 为 Unix 秒
+//       （Authorization: Bearer <JWT>，jwt 取自 GitHub secret）
 export async function syncDuolingo(year, month, cfg) {
   const username = cfg?.username;
+  const jwt = cfg?.jwt;
   if (!username) {
     return { ok: false, reason: '未配置 Duolingo 用户名 (duolingo.username)' };
   }
   const mm = String(month).padStart(2, '0');
+  const prefix = `${year}-${mm}-`;
+  const lastDay = new Date(year, month, 0).getDate();
+  const start = `${year}-${mm}-01`;
+  const end = `${year}-${mm}-${String(lastDay).padStart(2, '0')}`;
+
   try {
+    // 1) 解析数字 userId（无鉴权即可）
     const txt = await fetchText(
       `https://www.duolingo.com/2017-06-30/users?username=${encodeURIComponent(username)}`,
       { Accept: 'application/json' }
@@ -140,59 +147,39 @@ export async function syncDuolingo(year, month, cfg) {
     const data = JSON.parse(txt);
     const u = data.users && data.users[0];
     if (!u) return { ok: false, reason: `未找到用户 ${username}` };
+    const userId = u.id;
 
-    const streak = u.streak || 0;
-    const totalXp = u.totalXp || 0;
-    const sd = u.streakData && u.streakData.currentStreak;
-    const endDate = (sd && sd.endDate) || null;
-
-    // 连胜窗口: endDate 往前 streak-1 天 (统一用 UTC 解析, 避免本地时区偏移)
-    const window = new Set();
-    if (endDate && streak > 0) {
-      const [ey, em, ed] = endDate.split('-').map(Number);
-      for (let i = 0; i < streak; i++) {
-        const dt = new Date(Date.UTC(ey, em - 1, ed - i));
-        window.add(dt.toISOString().slice(0, 10));
+    // 2) 用 JWT 拉逐日 XP（仅目标月份，控制返回体量）
+    const byDate = {}; // 'YYYY-MM-DD' -> gainedXp
+    if (jwt) {
+      try {
+        const ctxt = await fetchText(
+          `https://www.duolingo.com/2017-06-30/users/${userId}/xp_summaries?startDate=${start}&endDate=${end}&timezone=Asia/Shanghai`,
+          { Accept: 'application/json', Authorization: `Bearer ${jwt}` }
+        );
+        const cdata = JSON.parse(ctxt);
+        for (const s of cdata.summaries || []) {
+          const xp = typeof s.gainedXp === 'number' ? s.gainedXp : 0;
+          if (!xp) continue; // 无练习 / 冻结日跳过
+          const ds = new Date((s.date || 0) * 1000).toISOString().slice(0, 10);
+          if (ds.startsWith(prefix)) byDate[ds] = xp;
+        }
+      } catch (e) {
+        return { ok: false, reason: `英语(xp_summaries JWT): ${e.message}` };
       }
+    } else {
+      return { ok: false, reason: '未配置 DUOLINGO_JWT（背英语逐日 XP 需要 JWT）' };
     }
 
-    // 记录 totalXp 快照 (用于推算每日增量)
-    const meta = getMeta();
-    const dl = meta.duolingo || { totalXpByDate: {} };
-    dl.totalXpByDate = dl.totalXpByDate || {};
-    const today = new Date();
-    const todayStr = today.toISOString().slice(0, 10);
-    dl.totalXpByDate[todayStr] = totalXp;
-    setMeta({ duolingo: dl });
-
-    const lastDay = new Date(year, month, 0).getDate();
-    const prefix = `${year}-${mm}-`;
     const touched = [];
-    for (let d = 1; d <= lastDay; d++) {
-      const date = `${prefix}${String(d).padStart(2, '0')}`;
-      if (date > todayStr) break;
-      const prev = dl.totalXpByDate[prevDate(date)];
-      const cur = dl.totalXpByDate[date];
-      let xp = null;
-      if (cur != null && prev != null && cur >= prev) xp = cur - prev;
-      const patch = {};
-      if (xp != null && xp > 0) patch.english_xp = xp;
-      if (window.has(date)) patch.english_streak = true;
-      if (Object.keys(patch).length) {
-        putDay(date, patch);
-        touched.push(date);
-      }
+    for (const [ds, xp] of Object.entries(byDate)) {
+      putDay(ds, { english_xp: xp });
+      touched.push(ds);
     }
-    return { ok: true, touched, streak, totalXp };
+    return { ok: true, touched, jwtUsed: true, days: touched.length };
   } catch (e) {
     return { ok: false, reason: `Duolingo: ${e.message}` };
   }
-}
-
-function prevDate(dateStr) {
-  const dt = new Date(dateStr + 'T00:00:00Z');
-  dt.setUTCDate(dt.getUTCDate() - 1);
-  return dt.toISOString().slice(0, 10);
 }
 
 // ---------- 微信读书 ----------

@@ -93,20 +93,20 @@ function renderCalendar() {
   for (let d = 1; d <= daysInMonth; d++) {
     const key = ymd(year, month, d);
     const rec = allDays[key] || {};
-    const dots = [];
+    const bars = [];
     for (const [field, meta] of Object.entries(METRICS)) {
       let has = false;
       if (field === 'weight') has = typeof rec[field] === 'number';
       else if (field === 'english_xp') has = (typeof rec.english_xp === 'number' && rec.english_xp > 0) || rec.english_streak === true;
       else has = typeof rec[field] === 'number' && rec[field] > 0;
-      if (has) dots.push(`<span class="dot ${meta.cls}" title="${meta.label}"></span>`);
+      if (has) bars.push(`<span class="bar ${meta.cls}" title="${meta.label}"></span>`);
     }
-    const checked = dots.length > 0;
+    const checked = bars.length > 0;
     const isToday = key === todayStr;
     html += `
       <div class="day ${checked ? 'checked' : ''} ${isToday ? 'today' : ''}" data-date="${key}">
         <div class="num">${d}</div>
-        <div class="dots">${dots.join('')}</div>
+        <div class="bars">${bars.join('')}</div>
       </div>`;
   }
   el.innerHTML = html;
