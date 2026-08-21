@@ -138,7 +138,7 @@ body {
 
 .day .num {
   text-align: center;
-  font-size: 30px;
+  font-size: clamp(18px, 4.5vw, 30px);
   font-weight: 700;
   line-height: 1;
   color: var(--text);
@@ -170,12 +170,12 @@ body {
   min-height: 22px;
 }
 .day .emoji {
-  width: 22px;
-  height: 22px;
+  width: clamp(15px, 4vw, 22px);
+  height: clamp(15px, 4vw, 22px);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  font-size: clamp(10px, 3.2vw, 13px);
   line-height: 1;
   border-radius: 50%;
 }
@@ -294,5 +294,14 @@ body {
 .day-row b { margin-left: auto; }
 
 @media (max-width: 640px) {
-  .charts { grid-template-columns: 1fr; }
+  .app { padding: 16px 10px 48px; }
+  .calendar { padding: 8px; gap: 4px; }
+  /* 手机上放宽严格正方形：格子按内容自适应高度，避免内容溢出格子边框 */
+  .day { padding: 4px 3px; aspect-ratio: auto; min-height: 46px; }
+  .day.empty { aspect-ratio: 1 / 1; min-height: 0; }
+  .day .lunar { font-size: 10px; top: 1px; right: 1px; }
+  .day .icons { min-height: 0; gap: 2px; }
+  .charts { grid-template-columns: 1fr; gap: 10px; }
+  .chart-card { padding: 10px 12px; }
+  .chart-card h3 { font-size: 14px; }
 }
