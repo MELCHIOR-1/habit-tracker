@@ -138,7 +138,7 @@ body {
 
 .day .num {
   text-align: center;
-  font-size: clamp(16px, 4vw, 30px);
+  font-size: clamp(13px, 3.4vw, 30px);
   font-weight: 700;
   line-height: 1;
   color: var(--text);
@@ -297,9 +297,9 @@ body {
   .app { padding: 16px 10px 48px; }
   .calendar { padding: 8px; gap: 4px; }
   /* 手机上放宽严格正方形：格子按内容自适应高度，避免内容溢出格子边框 */
-  .day { padding: 4px 3px; aspect-ratio: auto; min-height: 46px; }
+  .day { padding: 4px 2px; aspect-ratio: auto; min-height: 46px; }
   .day.empty { aspect-ratio: 1 / 1; min-height: 0; }
-  .day .lunar { top: 1px; right: 1px; }
+  .day .lunar { top: 0; right: 0; }
   .day .icons { min-height: 0; gap: 2px; }
   .charts { grid-template-columns: 1fr; gap: 10px; }
   .chart-card { padding: 10px 12px; }
