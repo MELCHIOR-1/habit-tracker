@@ -138,7 +138,7 @@ body {
 
 .day .num {
   text-align: center;
-  font-size: clamp(18px, 4.5vw, 30px);
+  font-size: clamp(16px, 4vw, 30px);
   font-weight: 700;
   line-height: 1;
   color: var(--text);
@@ -154,7 +154,7 @@ body {
   right: 2px;
   writing-mode: vertical-rl;
   text-orientation: upright;
-  font-size: 12px;
+  font-size: clamp(8px, 2.6vw, 12px);
   line-height: 1.2;
   color: var(--muted);
   text-align: right;
@@ -299,7 +299,7 @@ body {
   /* 手机上放宽严格正方形：格子按内容自适应高度，避免内容溢出格子边框 */
   .day { padding: 4px 3px; aspect-ratio: auto; min-height: 46px; }
   .day.empty { aspect-ratio: 1 / 1; min-height: 0; }
-  .day .lunar { font-size: 10px; top: 1px; right: 1px; }
+  .day .lunar { top: 1px; right: 1px; }
   .day .icons { min-height: 0; gap: 2px; }
   .charts { grid-template-columns: 1fr; gap: 10px; }
   .chart-card { padding: 10px 12px; }
