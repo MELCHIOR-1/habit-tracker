@@ -136,28 +136,27 @@ body {
 .day.checked { background: #fff; border-color: #cfe0ff; }
 .day.today { box-shadow: inset 0 0 0 2px var(--primary); }
 
+.day-head {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: start;
+  gap: 2px;
+  width: 100%;
+  padding-top: 2px;
+}
 .day .num {
   text-align: center;
-  font-size: clamp(13px, 3.4vw, 30px);
+  font-size: clamp(14px, 3.6vw, 30px);
   font-weight: 700;
   line-height: 1;
   color: var(--text);
 }
-.day-head {
-  position: relative;
-  width: 100%;
-  padding-top: 2px;
-}
 .day .lunar {
-  position: absolute;
-  top: 2px;
-  right: 2px;
   writing-mode: vertical-rl;
   text-orientation: upright;
-  font-size: clamp(8px, 2.6vw, 12px);
-  line-height: 1.2;
+  font-size: clamp(7px, 2vw, 12px);
+  line-height: 1.1;
   color: var(--muted);
-  text-align: right;
 }
 
 .day .icons {
@@ -299,7 +298,6 @@ body {
   /* 手机上放宽严格正方形：格子按内容自适应高度，避免内容溢出格子边框 */
   .day { padding: 4px 2px; aspect-ratio: auto; min-height: 46px; }
   .day.empty { aspect-ratio: 1 / 1; min-height: 0; }
-  .day .lunar { top: 0; right: 0; }
   .day .icons { min-height: 0; gap: 2px; }
   .charts { grid-template-columns: 1fr; gap: 10px; }
   .chart-card { padding: 10px 12px; }
