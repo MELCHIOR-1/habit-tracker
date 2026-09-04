@@ -1,9 +1,10 @@
 {
-  "lastSync": "2026-09-03T23:49:13.277Z",
-  "lastSyncTarget": "2026-08",
+  "lastSync": "2026-09-04T12:44:34.971Z",
+  "lastSyncTarget": "2026-09",
   "duolingo": {
     "totalXpByDate": {
       "2026-08-19": 229193
     }
-  }
+  },
+  "backfillMonths": 12
 }
