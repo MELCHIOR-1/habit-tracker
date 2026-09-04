@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: '0 22 * * *'   # UTC 22:00 = 北京时间 06:00
   workflow_dispatch:       # 允许在 Actions 页面手动触发
+    inputs:
+      backfill_months:
+        description: '回填最近几个月（默认 6；历史缺失时填 24 做一次深度回溯）'
+        required: false
+        default: '6'
 
 permissions:
   contents: write
@@ -32,6 +37,7 @@ jobs:
           DUOLINGO_JWT: ${{ secrets.jwt_token }}
           WEREAD_API_KEY: ${{ secrets.WEREAD_API_KEY }}
           DATA_PASSPHRASE: ${{ secrets.DATA_PASSPHRASE }}
+          BACKFILL_MONTHS: ${{ github.event.inputs.backfill_months || '6' }}
         run: node action-sync.mjs
 
       - name: Commit encrypted data

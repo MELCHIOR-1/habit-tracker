@@ -31,6 +31,18 @@ function intervalsAuth(apiKey) {
   return `Basic ${Buffer.from(`API_KEY:${apiKey}`).toString('base64')}`;
 }
 
+// 把 Unix 秒按 Asia/Shanghai（+08:00，全年无夏令时）折算成 'YYYY-MM-DD'。
+// runner / 服务器常运行在 UTC，直接用 toISOString() 会把北京时间 00:00~08:00
+// 的记录算成前一天，造成每月首尾数据错位甚至丢天。
+function dateCN(tsSec) {
+  return new Date((Number(tsSec) + 8 * 3600) * 1000).toISOString().slice(0, 10);
+}
+
+// 北京时间某月 1 号 00:00 对应的 Unix 秒（用于按月请求第三方接口）
+function monthStartCN(year, month) {
+  return Math.floor(Date.UTC(year, month - 1, 1, 0, 0, 0) / 1000) - 8 * 3600;
+}
+
 function parseCSV(text) {
   const rows = [];
   let row = [], field = '', inQ = false;
@@ -161,7 +173,7 @@ export async function syncDuolingo(year, month, cfg) {
         for (const s of cdata.summaries || []) {
           const xp = typeof s.gainedXp === 'number' ? s.gainedXp : 0;
           if (!xp) continue; // 无练习 / 冻结日跳过
-          const ds = new Date((s.date || 0) * 1000).toISOString().slice(0, 10);
+          const ds = dateCN(s.date || 0); // 按北京时间归日，避免 UTC 错位一天
           if (ds.startsWith(prefix)) byDate[ds] = xp;
         }
       } catch (e) {
@@ -190,7 +202,7 @@ export async function syncWeread(year, month, cfg) {
   if (!apiKey) {
     return { ok: false, reason: '未配置 WEREAD_API_KEY' };
   }
-  const baseTime = Math.floor(new Date(year, month - 1, 1, 0, 0, 0).getTime() / 1000);
+  const baseTime = monthStartCN(year, month); // 北京时间月首零点
   const body = {
     api_name: '/readdata/detail',
     mode: 'monthly',
@@ -217,8 +229,7 @@ export async function syncWeread(year, month, cfg) {
   const touched = [];
   for (const [ts, sec] of Object.entries(readTimes)) {
     if (typeof sec !== 'number' || sec < 60) continue; // 不足 1 分钟忽略，避免噪声
-    const dt = new Date(Number(ts) * 1000);
-    const ds = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+    const ds = dateCN(ts); // 按北京时间归日，避免 UTC 错位一天
     if (ds.startsWith(prefix)) {
       putDay(ds, { reading_min: Math.round(sec / 60) });
       touched.push(ds);

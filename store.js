@@ -49,6 +49,20 @@ export function getAll() {
   return cache;
 }
 
+// 把已有历史合并进内存缓存（增量基线）。
+// 用于 Action 每次运行时先解密仓库里的 checkins.enc 作为起点，
+// 保证历史数据不会被后续同步覆盖丢失。
+export function loadAll(obj) {
+  if (!obj || typeof obj !== 'object') return cache;
+  let n = 0;
+  for (const [d, v] of Object.entries(obj)) {
+    if (!v || typeof v !== 'object') continue;
+    cache[d] = { ...(cache[d] || {}), ...v, date: d };
+    n++;
+  }
+  return cache;
+}
+
 export function getDay(date) {
   return cache[date] || null;
 }
