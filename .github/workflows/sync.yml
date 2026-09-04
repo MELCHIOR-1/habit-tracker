@@ -6,9 +6,9 @@ on:
   workflow_dispatch:       # 允许在 Actions 页面手动触发
     inputs:
       backfill_months:
-        description: '回填最近几个月（默认 6；历史缺失时填 24 做一次深度回溯）'
+        description: '回填最近几个月（默认 12；历史缺失时可填 24 做更深度回溯）'
         required: false
-        default: '6'
+        default: '12'
 
 permissions:
   contents: write
@@ -37,7 +37,7 @@ jobs:
           DUOLINGO_JWT: ${{ secrets.jwt_token }}
           WEREAD_API_KEY: ${{ secrets.WEREAD_API_KEY }}
           DATA_PASSPHRASE: ${{ secrets.DATA_PASSPHRASE }}
-          BACKFILL_MONTHS: ${{ github.event.inputs.backfill_months || '6' }}
+          BACKFILL_MONTHS: ${{ github.event.inputs.backfill_months || '12' }}
         run: node action-sync.mjs
 
       - name: Commit encrypted data

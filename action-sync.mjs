@@ -48,7 +48,7 @@ if (existsSync(encPath)) {
 // ---------- 2) 回填最近 N 个月 ----------
 // 只同步「本月+上月」会导致跨月后更早的数据被丢弃，故改为滚动回填多个月；
 // 中途某次任务失败也能在下一次自愈补回。
-const months = Math.max(1, Number(process.env.BACKFILL_MONTHS || 6));
+const months = Math.max(1, Number(process.env.BACKFILL_MONTHS || 12));
 const now = new Date();
 const targets = [];
 for (let i = 0; i < months; i++) {
