@@ -49,5 +49,15 @@ jobs:
             echo "无变化，跳过提交"
           else
             git commit -m "sync: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-            git push
+            # 手动触发或补跑时可能与上一次运行撞车导致 push 被拒，先变基再重试，避免本次同步成果丢失
+            ok=0
+            for i in 1 2 3; do
+              if git pull --rebase --no-edit && git push; then ok=1; break; fi
+              echo "第 $i 次推送失败，5 秒后重试..."
+              sleep 5
+            done
+            if [ "$ok" != "1" ]; then
+              echo "::error::同步结果推送失败，请检查仓库权限或稍后手动重跑"
+              exit 1
+            fi
           fi
