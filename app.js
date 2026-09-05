@@ -241,7 +241,102 @@ function renderAll() {
   $('#monthLabel').textContent = `${state.year}年${state.month}月`;
   renderCalendar();
   renderCharts();
+  renderHeatmaps();
   renderStatus();
+}
+
+// ---------- 年打卡图（GitHub 贡献图风格） ----------
+// 阈值按"全年典型活跃度"分 3 档（轻/中/深），加上"无活动"共 4 级；过细的阈值会被噪声带偏。
+const HEATMAP_THRESHOLDS = {
+  exercise_min: [1, 30, 60],       // >0 / ≥30 分钟 / ≥60 分钟
+  reading_min: [1, 15, 40],        // >0 / ≥15 分钟 / ≥40 分钟
+  english_xp: [1, 100, 250]        // >0 / ≥100 XP / ≥250 XP
+};
+
+const HEATMAP_DAY_LABELS = { 1: '一', 3: '三', 5: '五' }; // grid-row 对应 Sun..Sat
+const HEATMAP_MONTH_CN = ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'];
+
+function heatLevel(v, thresholds) {
+  if (typeof v !== 'number' || v <= 0) return 0;
+  if (v >= thresholds[2]) return 3;
+  if (v >= thresholds[1]) return 2;
+  return 1;
+}
+
+function buildYearGrid(year) {
+  // 网格从包含 Jan 1 的那个周的周日开始（行序 Sun..Sat，对齐 GitHub）
+  const jan1 = new Date(year, 0, 1);
+  const startOffset = jan1.getDay(); // 0=Sun
+  const startDate = new Date(year, 0, 1 - startOffset);
+  const dec31 = new Date(year, 11, 31);
+  const endOffset = 6 - dec31.getDay();
+  const endDate = new Date(year, 11, 31 + endOffset);
+  const days = Math.round((endDate - startDate) / 86400000) + 1;
+  const weeks = days / 7;
+
+  // 月份标签：每个月份第一次出现的列（去重）
+  const monthLabels = [];
+  let lastMonth = -1;
+  for (let w = 0; w < weeks; w++) {
+    let m = -1;
+    for (let d = 0; d < 7; d++) {
+      const dt = new Date(startDate.getTime() + (w * 7 + d) * 86400000);
+      if (dt.getFullYear() === year) {
+        const mm = dt.getMonth();
+        if (m === -1 || mm < m) m = mm;
+      }
+    }
+    if (m !== -1 && m !== lastMonth) { monthLabels.push({ week: w, month: m }); lastMonth = m; }
+  }
+
+  return { startDate, weeks, monthLabels };
+}
+
+function renderHeatmaps() {
+  const year = state.year;
+  const container = $('#heatmaps');
+  if (!container) return;
+  const { startDate, weeks, monthLabels } = buildYearGrid(year);
+  const startMs = startDate.getTime();
+  const fields = ['exercise_min', 'reading_min', 'english_xp'];
+
+  const parts = [];
+  for (const field of fields) {
+    const meta = METRICS[field];
+    const thresholds = HEATMAP_THRESHOLDS[field];
+
+    let cells = '';
+    // 月份标签（grid-row 1）
+    for (let i = 0; i < monthLabels.length; i++) {
+      const ml = monthLabels[i];
+      const nextWeek = i + 1 < monthLabels.length ? monthLabels[i + 1].week : weeks;
+      const span = Math.max(1, nextWeek - ml.week);
+      cells += `<div class="heat-month" style="grid-column:${ml.week + 2}/span ${span}">${HEATMAP_MONTH_CN[ml.month]}</div>`;
+    }
+    // 星期标签（grid-column 1）
+    for (let d = 0; d < 7; d++) {
+      cells += `<div class="heat-day" style="grid-row:${d + 2}">${HEATMAP_DAY_LABELS[d] || ''}</div>`;
+    }
+    // 单元格
+    for (let w = 0; w < weeks; w++) {
+      for (let d = 0; d < 7; d++) {
+        const dt = new Date(startMs + (w * 7 + d) * 86400000);
+        const inYear = dt.getFullYear() === year;
+        const rec = inYear ? state.allDays[ymd(dt.getFullYear(), dt.getMonth() + 1, dt.getDate())] : null;
+        const v = rec ? rec[field] : null;
+        const lvl = inYear ? heatLevel(v, thresholds) : 0;
+        const tip = inYear ? `${ymd(dt.getFullYear(), dt.getMonth() + 1, dt.getDate())}: ${typeof v === 'number' ? `${v}${meta.unit}` : '无'}` : '';
+        cells += `<div class="heat-cell level-${lvl}" style="grid-row:${d + 2};grid-column:${w + 2}" title="${tip}"></div>`;
+      }
+    }
+    parts.push(`
+      <div class="heatmap-card" style="--metric-color:${meta.color}">
+        <h3><span class="emoji ${meta.cls}">${meta.icon}</span>${meta.label} · ${year} 年打卡 <span class="unit">${meta.unit}</span></h3>
+        <div class="heatmap">${cells}</div>
+        <div class="heat-legend"><span>少</span>${[0, 1, 2, 3].map((l) => `<div class="heat-cell level-${l} small"></div>`).join('')}<span>多</span></div>
+      </div>`);
+  }
+  container.innerHTML = parts.join('');
 }
 
 // ---------- 日明细弹窗（只读） ----------

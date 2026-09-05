@@ -292,6 +292,88 @@ body {
 }
 .day-row b { margin-left: auto; }
 
+/* ---------- 年打卡图（GitHub 贡献图风格） ---------- */
+.heatmaps {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 20px;
+}
+.heatmap-card {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 14px 16px;
+  box-shadow: var(--shadow);
+}
+.heatmap-card h3 {
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.heatmap-card h3 .emoji {
+  width: 22px; height: 22px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 50%; font-size: 13px;
+}
+.heatmap {
+  display: grid;
+  grid-template-columns: 28px repeat(53, 12px);
+  grid-template-rows: 16px repeat(7, 12px);
+  gap: 3px;
+  font-size: 11px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.heat-month {
+  color: var(--muted);
+  font-size: 11px;
+  align-self: end;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.heat-day {
+  color: var(--muted);
+  font-size: 10px;
+  align-self: center;
+  justify-self: end;
+  padding-right: 4px;
+}
+.heat-cell {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--metric-color, var(--primary)) 8%, white);
+  border: 1px solid color-mix(in srgb, var(--metric-color, var(--primary)) 12%, transparent);
+}
+.heat-cell.level-1 {
+  background: color-mix(in srgb, var(--metric-color, var(--primary)) 32%, white);
+  border-color: transparent;
+}
+.heat-cell.level-2 {
+  background: color-mix(in srgb, var(--metric-color, var(--primary)) 62%, white);
+  border-color: transparent;
+}
+.heat-cell.level-3 {
+  background: var(--metric-color, var(--primary));
+  border-color: transparent;
+}
+.heat-legend {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 10px;
+  justify-content: flex-end;
+  color: var(--muted);
+  font-size: 11px;
+}
+.heat-legend .heat-cell.small {
+  width: 11px;
+  height: 11px;
+}
+
 @media (max-width: 640px) {
   .app { padding: 16px 10px 48px; }
   .calendar { padding: 8px; gap: 4px; }
@@ -302,4 +384,6 @@ body {
   .charts { grid-template-columns: 1fr; gap: 10px; }
   .chart-card { padding: 10px 12px; }
   .chart-card h3 { font-size: 14px; }
+  .heatmap-card { padding: 10px 12px; }
+  .heatmap-card h3 { font-size: 14px; }
 }
