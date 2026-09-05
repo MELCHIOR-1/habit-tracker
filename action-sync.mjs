@@ -64,7 +64,15 @@ for (const { y, m } of targets) {
     const r = await syncMonth(y, m, config);
     const bad = Object.entries(r).filter(([, v]) => v && v.ok === false);
     if (bad.length) failures.push(`${tag}: ${bad.map(([k, v]) => `${k}(${v.reason})`).join('; ')}`);
-    console.log(`[sync] ${tag}:`, JSON.stringify(r));
+    const brief = Object.entries(r)
+      .map(([k, v]) => {
+        if (!v) return `${k}:—`;
+        if (v.ok === false) return `${k}:✗ ${v.reason}`;
+        const warns = (v.warnings || []).filter(Boolean);
+        return `${k}:${(v.touched || []).length}天${warns.length ? ' ⚠ ' + warns.join(' / ') : ''}`;
+      })
+      .join('   ');
+    console.log(`[sync] ${tag}: ${brief}`);
   } catch (e) {
     failures.push(`${tag}: ${e.message}`);
     console.warn(`[sync] ${tag} 失败：${e.message}`);

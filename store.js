@@ -81,6 +81,44 @@ export function putDay(date, patch) {
   return next;
 }
 
+// 清空某月指定字段（用于「按数据源整月重建」）。
+// 背景：增量同步只写不删，一旦某个数据源因 bug（如归日错位）写脏了历史，
+// 后续再同步只会叠加正确值，脏值永远清不掉。因此每个数据源在「成功」拉到
+// 某月数据后，先清掉该月由自己负责的字段，再整体重写。
+export function clearMonthFields(year, month, fields) {
+  const prefix = `${year}-${String(month).padStart(2, '0')}-`;
+  let n = 0;
+  for (const [d, v] of Object.entries(cache)) {
+    if (!d.startsWith(prefix) || !v || typeof v !== 'object') continue;
+    let changed = false;
+    const next = { ...v };
+    for (const f of fields) {
+      if (Object.prototype.hasOwnProperty.call(next, f)) {
+        delete next[f];
+        changed = true;
+      }
+    }
+    if (!changed) continue;
+    const rest = Object.keys(next).filter((k) => k !== 'date' && k !== 'updatedAt');
+    if (rest.length === 0) delete cache[d];
+    else cache[d] = next;
+    n++;
+  }
+  if (n) writeJSON(DATA_FILE, cache);
+  return n;
+}
+
+// 统计某月包含指定字段中任一字段的天数（用于「拉到 0 天」时的安全兜底判断）
+export function countMonthFields(year, month, fields) {
+  const prefix = `${year}-${String(month).padStart(2, '0')}-`;
+  let n = 0;
+  for (const [d, v] of Object.entries(cache)) {
+    if (!d.startsWith(prefix) || !v || typeof v !== 'object') continue;
+    if (fields.some((f) => typeof v[f] === 'number' || typeof v[f] === 'boolean')) n++;
+  }
+  return n;
+}
+
 export function getMonth(year, month) {
   const prefix = `${year}-${String(month).padStart(2, '0')}-`;
   const out = {};

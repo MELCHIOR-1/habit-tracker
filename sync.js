@@ -1,4 +1,4 @@
-import { putDay, getMeta, setMeta } from './store.js';
+import { putDay, getMeta, setMeta, clearMonthFields, countMonthFields } from './store.js';
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36';
 
@@ -41,6 +41,27 @@ function dateCN(tsSec) {
 // 北京时间某月 1 号 00:00 对应的 Unix 秒（用于按月请求第三方接口）
 function monthStartCN(year, month) {
   return Math.floor(Date.UTC(year, month - 1, 1, 0, 0, 0) / 1000) - 8 * 3600;
+}
+
+// 把某个数据源在某月的结果「整月重建」：先清空该数据源负责的字段，再整体写入。
+//
+// 为什么必须重建而不是叠加：增量同步只写不删。一旦某数据源因 bug（例如归日
+// 错位把 8/3 的读书写到了 8/2）写脏了历史，后续同步只会追加正确的一天，
+// 脏的那天永远清不掉，于是网页显示的天数比 App 多。
+//
+// 安全兜底：若本次拉到 0 天，而本地该月已有数据，说明更可能是接口抖动/限流，
+// 此时保留旧数据并告警，避免整月被误清空。
+function rebuildMonth(year, month, fields, entries, warnings, label) {
+  if (entries.length === 0) {
+    const existing = countMonthFields(year, month, fields);
+    if (existing > 0) {
+      warnings.push(`${label}: 本次返回 0 天，但本地已有 ${existing} 天，疑似接口异常，保留旧数据`);
+      return 0;
+    }
+  }
+  clearMonthFields(year, month, fields);
+  for (const [ds, patch] of entries) putDay(ds, patch);
+  return entries.length;
 }
 
 function parseCSV(text) {
@@ -89,15 +110,15 @@ export async function syncIntervals(year, month, cfg) {
   try {
     const txt = await fetchText(`${base}/wellness?oldest=${first}&newest=${last}`, headers);
     const rows = JSON.parse(txt);
+    const entries = [];
     for (const w of rows || []) {
       const date = w.id || w.date;
       if (!date) continue;
       const weight = w.weight;
-      if (typeof weight === 'number' && weight > 0) {
-        putDay(date, { weight });
-        touched.add(date);
-      }
+      if (typeof weight === 'number' && weight > 0) entries.push([date, { weight }]);
     }
+    rebuildMonth(year, month, ['weight'], entries, warnings, '体重(wellness)');
+    for (const [d] of entries) touched.add(d);
   } catch (e) {
     warnings.push(`体重(wellness): ${e.message}`);
   }
@@ -116,13 +137,13 @@ export async function syncIntervals(year, month, cfg) {
       const secs = parseFloat(r.elapsed_time || r.duration || 0);
       if (secs > 0) sums[d] = (sums[d] || 0) + secs;
     }
+    const entries = [];
     for (const [d, secs] of Object.entries(sums)) {
       const mins = Math.round(secs / 60);
-      if (mins > 0) {
-        putDay(d, { exercise_min: mins });
-        touched.add(d);
-      }
+      if (mins > 0) entries.push([d, { exercise_min: mins }]);
     }
+    rebuildMonth(year, month, ['exercise_min'], entries, warnings, '运动(activities)');
+    for (const [d] of entries) touched.add(d);
   } catch (e) {
     warnings.push(`运动(activities): ${e.message}`);
   }
@@ -183,12 +204,12 @@ export async function syncDuolingo(year, month, cfg) {
       return { ok: false, reason: '未配置 DUOLINGO_JWT（背英语逐日 XP 需要 JWT）' };
     }
 
-    const touched = [];
-    for (const [ds, xp] of Object.entries(byDate)) {
-      putDay(ds, { english_xp: xp });
-      touched.push(ds);
-    }
-    return { ok: true, touched, jwtUsed: true, days: touched.length };
+    const entries = Object.entries(byDate).map(([ds, xp]) => [ds, { english_xp: xp }]);
+    const warnings = [];
+    // english_streak 是早期版本的兜底信号，现已由 english_xp 取代，重建时一并清掉
+    rebuildMonth(year, month, ['english_xp', 'english_streak'], entries, warnings, '英语(xp_summaries)');
+    const touched = entries.map(([ds]) => ds);
+    return { ok: true, touched, jwtUsed: true, days: touched.length, warnings };
   } catch (e) {
     return { ok: false, reason: `Duolingo: ${e.message}` };
   }
@@ -226,16 +247,18 @@ export async function syncWeread(year, month, cfg) {
   }
   const readTimes = data?.readTimes || {};
   const prefix = `${year}-${String(month).padStart(2, '0')}-`;
-  const touched = [];
+  const warnings = [];
+  const entries = [];
   for (const [ts, sec] of Object.entries(readTimes)) {
-    if (typeof sec !== 'number' || sec < 60) continue; // 不足 1 分钟忽略，避免噪声
-    const ds = dateCN(ts); // 按北京时间归日，避免 UTC 错位一天
+    // 不足 1 分钟视为噪声（微信读书 App 未计入，实测存在 24s / 26s 这类残留桶）
+    if (typeof sec !== 'number' || sec < 60) continue;
+    const ds = dateCN(Number(ts)); // 按北京时间归日：接口返回的桶是北京当天 00:00
     if (ds.startsWith(prefix)) {
-      putDay(ds, { reading_min: Math.round(sec / 60) });
-      touched.push(ds);
+      entries.push([ds, { reading_min: Math.max(1, Math.round(sec / 60)) }]);
     }
   }
-  return { ok: true, touched };
+  rebuildMonth(year, month, ['reading_min'], entries, warnings, '微信读书(readTimes)');
+  return { ok: true, touched: entries.map(([d]) => d), warnings };
 }
 
 // ---------- 编排：整月同步 ----------
