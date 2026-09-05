@@ -67,3 +67,18 @@ node server.js          # 打开 http://localhost:3000
 - **成功标志**：正确同步后 `.enc` 体积会明显大于"空数据"时的 **6850 字节**（例如含体重/运动时为 7000+ 字节）。若重跑 Action 后体积仍是 6850，说明 Intervals 那次仍没抓到，看 Action 日志里 `intervals` 字段的 `ok`/`reason` 定位。
 - 加密算法本身验证过无 bug：`crypto.mjs` 是对整个对象 `JSON.stringify` 后整体加密，字段一个不丢，且与前端解密兼容。空白不是加密丢字段，而是源数据当时就没抓到。
 
+### 3. 网页打卡天数比数据源 App 多（幽灵数据）——必须「整月重建」而非叠加
+- **现象**：微信读书 App 显示 8 月读书 17 天，网页却显示 28 天，多出的日期都有数据。
+- **根因是两个 bug 叠加**：
+  1. **归日错位（已修）**：微信读书 `readTimes` 的 key 是「北京当天 00:00」的 Unix 秒（即 UTC 前一天 16:00）。旧代码直接 `toISOString()`（UTC），把每天都记成了**前一天**。多邻国 `xp_summaries` 同理。
+  2. **增量同步只写不删（已修）**：改对归日后，新同步只**追加**正确的那天，之前写错的「前一天」脏值**永远清不掉**。两者合并的结果就是网页比 App 多出一批"提前一天"的幽灵天。
+- **修复**：`store.js` 新增 `clearMonthFields()` / `countMonthFields()`，`sync.js` 新增 `rebuildMonth()`。每个数据源在**成功**拉到某月数据后，先清空该月**自己负责的字段**再整体重写：
+  | 数据源 | 负责字段 |
+  |---|---|
+  | Intervals 体重 | `weight` |
+  | Intervals 运动 | `exercise_min` |
+  | 微信读书 | `reading_min` |
+  | 多邻国 | `english_xp`、`english_streak` |
+- **安全兜底**：若某月接口返回 0 天、但本地该月已有数据，判定为接口抖动/限流，**保留旧数据并告警**，不会把整月清空。数据源请求失败时同样不清理。
+- **排查同类问题**：直接调 `i.weread.qq.com/api/agent/gateway`（`api_name=/readdata/detail`、`mode=monthly`、`baseTime=北京时间月首零点`）拿原始 `readTimes`，把每个桶的 `dateCN(ts)` 与 App 对比即可定位。注意接口会返回 **24s / 26s 这类噪声桶**，App 不计入，代码里用 `<60` 秒过滤。
+
